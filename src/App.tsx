@@ -1,21 +1,23 @@
-import { useEffect, useState } from 'react';
-import './App.css';
-import axios from 'axios';
+import { ChangeEvent, useEffect, useState } from 'react';
+import axios, { AxiosResponse } from 'axios';
+import { IApiResponse } from './types/type';
 
-const App = () => {
-    const [response, setResponse] = useState('');
-    const [userInput, setUserInput] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [dots, setDots] = useState('');
+const App: React.FC = () => {
+    const [response, setResponse] = useState<string>('');
+    const [userInput, setUserInput] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
+    const [displayedResponse, setDisplayedResponse] = useState('');
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
         setUserInput(e.target.value);
     };
 
-    const fetchAPI = async () => {
+    const fetchAPI = async (): Promise<void> => {
         setLoading(true);
+        setResponse('');
+        setDisplayedResponse('');
         try {
-            const result = await axios({
+            const result: AxiosResponse<IApiResponse> = await axios({
                 method: 'post',
                 url: '/api/testapp/v1/chat-completions/HCX-003',
                 headers: {
@@ -49,34 +51,40 @@ const App = () => {
     };
 
     useEffect(() => {
-        let timer;
-        if (loading) {
-            timer = setInterval(() => {
-                setDots((dots) => (dots.length < 4 ? dots + 'O' : ''));
-            }, 500);
-        } else {
-            setDots('');
-        }
-        return () => clearInterval(timer);
-    }, [loading]);
+        let index = 0;
+        const intervalId = setInterval(() => {
+            if (index < response.length) {
+                setDisplayedResponse((prev) => prev + response.charAt(index));
+                index++;
+            } else {
+                clearInterval(intervalId);
+            }
+        }, 50);
+
+        return () => clearInterval(intervalId);
+    }, [response]);
     return (
-        <div className="App">
-            <header className="App-header">
-                <div className="wrap">
-                    <p>Response from Clova API:</p>
+        <div className="w-full App">
+            <div className="flex flex-col items-center justify-center h-screen gap-3 mx-auto wrap">
+                <p>네이버 클로바 스튜디오 API</p>
+                <div className="flex flex-row items-center justify-center gap-3">
                     <input
                         type="text"
                         value={userInput}
                         onChange={handleInputChange}
-                        placeholder="Enter your request"
-                        style={{ padding: '10px', fontSize: '16px', marginBottom: '10px' }}
+                        placeholder="내용을 입력해주세요"
+                        className="p-2 mb-2 text-base border"
                     />
-                    <button onClick={fetchAPI} style={{ padding: '10px 20px', fontSize: '16px' }}>
-                        Submit Request
+
+                    <button onClick={fetchAPI} className="p-2 text-base shadow-md rounded-xl">
+                        보내기
                     </button>
-                    {loading ? <p className="loading-dot">{dots}</p> : <p className="typing">{response}</p>}
                 </div>
-            </header>
+                <div className="max-w-4xl mx-auto">
+                    {userInput}
+                    {loading ? <p>Loading...</p> : <p className="text-indigo-500">{displayedResponse}</p>}
+                </div>
+            </div>
         </div>
     );
 };
